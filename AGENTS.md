@@ -2,8 +2,6 @@
 
 This file provides guidance to AI agents when working with code in this repository.
 
-> `CLAUDE.md` is a symlink to this file, so Claude Code and other tooling read the same content.
-
 ## Project Overview
 
 This is the **Neon MCP Server** - a Model Context Protocol server that bridges natural language requests to the Neon API, enabling LLMs to manage Lakebase Postgres databases on Neon through conversational commands. The project implements remote (SSE/Streamable HTTP) MCP server transports with OAuth authentication support.
