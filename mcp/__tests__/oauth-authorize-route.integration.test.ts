@@ -225,7 +225,7 @@ describe('/api/authorize route integration', () => {
     expect(Number(maxAge![1])).toBeLessThanOrEqual(1800);
   });
 
-  it('renders editable consent with Allow writes checked by default', async () => {
+  it('renders editable consent with Read and write checked by default', async () => {
     const response = await GET(buildAuthorizeRequest());
     const html = await response.text();
     expect(html).toContain('scope-checkbox');
@@ -234,7 +234,7 @@ describe('/api/authorize route integration', () => {
     expect(upstreamAuth).not.toHaveBeenCalled();
   });
 
-  it('defaults Allow writes to unchecked for registration x-read-only without locking it', async () => {
+  it('defaults Read and write to unchecked for registration x-read-only without locking it', async () => {
     vi.mocked(model.getClientRegisterHeaders).mockResolvedValue({
       headers: { 'x-read-only': 'true' },
       createdAt: Date.now(),
@@ -242,7 +242,7 @@ describe('/api/authorize route integration', () => {
     const response = await GET(buildAuthorizeRequest());
     const html = await response.text();
     const writeInput = html.match(
-      /<input\s+type="checkbox"\s+name="scopes"\s+value="write"[\s\S]*?\/>/,
+      /<input\s+type="radio"\s+name="scopes"\s+value="write"[\s\S]*?\/>/,
     )?.[0];
     expect(writeInput).toBeTruthy();
     expect(writeInput).not.toContain('checked');
@@ -309,11 +309,11 @@ describe('/api/authorize route integration', () => {
     expect(html).toContain('proj-123');
     expect(html).toContain('Querying');
     expect(html).toContain('Schema');
-    expect(html).toContain('Read-only');
+    expect(html).toContain('Read only');
     expect(html).not.toContain('class="scope-checkbox"');
     expect(html).not.toContain('name="projectMode"');
     expect(html).toContain(
-      'To change these limits, update the connection URL and authorize again.',
+      'To change this access, update the connection URL and authorize again.',
     );
   });
 
