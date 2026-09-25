@@ -1,13 +1,21 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { NEON_TOOLS } from '../tools/definitions';
+import { getFilteredTools } from '../tools/grant-filter';
 import { toListedTool } from '../tools/listed-schema';
 import type { GrantContext } from '../utils/grant-context';
 
 const { flushAnalyticsSpy, runSqlSpy, trackSpy } = vi.hoisted(() => ({
   flushAnalyticsSpy: vi.fn().mockResolvedValue(undefined),
-  runSqlSpy: vi.fn(async ({ params }: { params: Record<string, unknown> }) => ({
-    content: [{ type: 'text', text: JSON.stringify(params) }],
-  })),
+  runSqlSpy: vi.fn(
+    async (
+      { params }: { params: Record<string, unknown> },
+      ..._context: unknown[]
+    ) => {
+      void _context;
+      return {
+        content: [{ type: 'text', text: JSON.stringify(params) }],
+      };
+    },
+  ),
   trackSpy: vi.fn(),
 }));
 
@@ -17,16 +25,29 @@ vi.mock('../oauth/model', () => ({
   },
 }));
 
+// The invalid-token challenge test must not verify its fake key against Neon.
+vi.mock('../server/api', () => ({
+  createNeonClient: () => ({
+    getAuthDetails: vi.fn().mockRejectedValue(new Error('Invalid test token')),
+  }),
+}));
+
 // Mocks the module that defines the handlers, not the barrel that re-exports
 // them, so it applies no matter which one the code under test imports.
 vi.mock('../tools/tools', async () => {
   const actual =
     await vi.importActual<typeof import('../tools/tools')>('../tools/tools');
+  const { runSqlInputSchema } = await import('../tools/toolsSchema');
   return {
     ...actual,
     NEON_HANDLERS: {
       ...actual.NEON_HANDLERS,
-      run_sql: runSqlSpy,
+      // Preserve the real handler's required-ID validation after grant injection.
+      // The shared published schema now permits an omitted project_id.
+      run_sql: (...args: Parameters<typeof actual.NEON_HANDLERS.run_sql>) => {
+        const params = runSqlInputSchema.parse(args[0]?.params ?? {});
+        return runSqlSpy({ params }, args[1], args[2]);
+      },
     },
   };
 });
@@ -221,8 +242,9 @@ describe('transport dynamic tool composition', () => {
     };
     expect(initBody.result?.instructions).toContain('read-only permissions');
     expect(initBody.result?.instructions).toContain(
-      'scoped to one project only (proj_instructions)',
+      'always pass it on an unscoped connection',
     );
+    expect(initBody.result?.instructions).not.toContain('proj_instructions');
 
     const tools = await listToolsForToken(oauthToken);
     for (const tool of tools) {
@@ -626,7 +648,11 @@ describe('transport dynamic tool composition', () => {
     );
 
     const tools = await listToolsForToken(oauthToken);
-    expect(tools).toEqual(NEON_TOOLS.map(toListedTool));
+    expect(tools).toEqual(
+      getFilteredTools({ projectId: null, scopes: null }, false).map(
+        toListedTool,
+      ),
+    );
 
     const inspect = tools.find((tool) => tool.name === 'inspect_database');
     expect(JSON.stringify(inspect?.inputSchema)).toContain('table-sizes');

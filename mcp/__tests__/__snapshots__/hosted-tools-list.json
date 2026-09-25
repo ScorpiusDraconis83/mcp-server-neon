@@ -305,13 +305,13 @@
   {
     "name": "get_connection_string",
     "title": "Get Connection String",
-    "description": "Get a PostgreSQL connection string for a Neon database. The branch must have a compute endpoint. `create_project` and `create_branch` do not return one; call this after they succeed. All parameters are optional; the tool resolves the project, branch, and database automatically if not specified. Requires write access: the connection string carries a privileged role password, so it is unavailable in read-only mode. A read-only caller who needs a DATABASE_URL must copy it from https://console.neon.tech manually.",
+    "description": "Get a PostgreSQL connection string for a Neon database. The branch must have a compute endpoint. `create_project` and `create_branch` do not return one; call this after they succeed. Branch, compute, and database are optional and resolved automatically if not specified; `project_id` follows the connection scope. Requires write access: the connection string carries a privileged role password, so it is unavailable in read-only mode. A read-only caller who needs a DATABASE_URL must copy it from https://console.neon.tech manually.",
     "inputSchema": {
       "type": "object",
       "properties": {
         "project_id": {
           "type": "string",
-          "description": "The ID of the project. If not provided, the only available project will be used."
+          "description": "The ID of the project."
         },
         "branch_id": {
           "type": "string",

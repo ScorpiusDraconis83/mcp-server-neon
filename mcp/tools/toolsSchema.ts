@@ -163,11 +163,7 @@ export const describeBranchInputSchema = z
 
 export const getConnectionStringInputSchema = z
   .object({
-    project_id: z
-      .string()
-      .describe(
-        'The ID of the project. If not provided, the only available project will be used.',
-      ),
+    project_id: z.string().describe('The ID of the project.'),
     branch_id: z
       .string()
       .optional()

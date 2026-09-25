@@ -40,10 +40,6 @@ function toolByName(toolName: string): NeonTool | undefined {
   return NEON_TOOLS.find((tool) => tool.name === toolName);
 }
 
-/**
- * Project-scoped grants strip `project_id` from the published schema, so the
- * client can supply it only through the grant.
- */
 export async function invokeTool(
   toolName: string,
   args: unknown,
